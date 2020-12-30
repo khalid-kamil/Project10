@@ -13,6 +13,13 @@ class ViewController: UICollectionViewController, UIImagePickerControllerDelegat
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
+        let defaults = UserDefaults.standard
+        
+        if let savedPeople = defaults.object(forKey: "people") as? Data {
+            if let decodedPeople = try? NSKeyedUnarchiver.unarchiveTopLevelObjectWithData(savedPeople) as? [Person] {
+                people = decodedPeople
+            }
+        }
         
         navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .add, target: self, action: #selector(addNewPerson))
     }
@@ -30,6 +37,8 @@ class ViewController: UICollectionViewController, UIImagePickerControllerDelegat
         
         let person = people[indexPath.item]
         cell.name.text = person.name
+        cell.name.textColor = .black
+        
         
         let path = getDocumentsDirectory().appendingPathComponent(person.image)
         cell.imageView.image = UIImage(contentsOfFile: path.path)
@@ -81,13 +90,12 @@ class ViewController: UICollectionViewController, UIImagePickerControllerDelegat
             acRename.addTextField()
             
             acRename.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
-            acRename.addAction(UIAlertAction(title: "OK", style: .default) { [weak self, weak acRename] _ in
+            acRename.addAction(UIAlertAction(title: "OK", style: .default) { [weak acRename] _ in
                 guard let newName = acRename?.textFields?[0].text else { return }
+                print(newName)
                 person.name = newName
-                
-                self?.collectionView.reloadData()
+                collectionView.reloadData()
             })
-            
             self!.present(acRename, animated: true, completion: nil)
         })
         ac.addAction(UIAlertAction(title: "Delete", style: .destructive) { [weak self] _ in
@@ -105,6 +113,13 @@ class ViewController: UICollectionViewController, UIImagePickerControllerDelegat
     func getDocumentsDirectory() -> URL {
         let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
         return paths[0]
+    }
+    
+    func save() {
+        if let savedData = try? NSKeyedArchiver.archivedData(withRootObject: people, requiringSecureCoding: false) {
+            let defaults = UserDefaults.standard
+            defaults.set(savedData, forKey: "people")
+        }
     }
     
     
